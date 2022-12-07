@@ -1,0 +1,16 @@
+* {
+  position: relative;
+}
+
+.jumbotron {
+  padding-top: 5rem;
+  background-color: #eeede7;
+}
+
+.footer {
+  background-color: #eeede7;
+}
+
+.login {
+  padding-top: 5rem;
+}
