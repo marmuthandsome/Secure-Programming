@@ -1,68 +1,9 @@
 <?php
-session_start();
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$db = "AssessmentSecProg";
-$connect = new PDO("mysql:host=$servername; dbname=$db", $username, $password);
-$connect->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-if (isset($_POST["login"])) {
-    $time = time() - 30;
-    $ip = '127.0.0.1';
-    $query = "SELECT count(*) as total_count FROM log WHERE ip = :ip AND time > :time";
-    $limitquery = $connect->prepare($query);
-    $limitquery->execute(
-        array(
-            'ip'    =>     $ip,
-            'time'     =>    $time
-        )
-    );
-    $totalfailedloginattempts = $limitquery->rowCount();
-    if ($totalfailedloginattempts >= 3) {
-        $_SESSION['Message'] = "Too many failed login attempts";
-    } else {
-        if (isset($_POST['g-recaptcha-response'])) {
-            $secret = "6LfkzGMjAAAAAFR6Npy2bSFkBwDYff9DQL0609Xf";
-            $response = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $secret . '&response=' . $_POST['g-recaptcha-response']);
-            $data = json_decode($response);
-            if ($data->success) {
-                $query = "SELECT * FROM users WHERE username = :username AND password = :password";
-                $statement = $connect->prepare($query);
-                $statement->execute(
-                    array(
-                        'username'     =>     $_POST["username"],
-                        'password'     =>     $_POST["password"]
-                    )
-                );
-                $count = $statement->rowCount();
-                if ($count > 0) {
-                    $_SESSION["username"] = $_POST["username"];
-                    $sql = "DELETE FROM log WHERE ip=?";
-                    $stmt = $connect->prepare($sql);
-                    $stmt->execute(["127.0.0.1"]);
-                    header("Location: ./dashboard.html");
-                    unset($_SESSION['Message']);
-                } else {
-                    $ip_address = '127.0.0.1';
-                    $logtime = time();
-                    $query = "INSERT INTO log (ip, time) VALUES (:ip,:time)";
-                    $stmt = $connect->prepare($query);
-                    $stmt->execute(
-                        array(
-                            'ip'        =>     $ip_address,
-                            'time'      =>     $logtime
-                        )
-                    );
-                    $_SESSION['Message'] = "Wrong Credentials";
-                }
-            }
-        } elseif (empty($_POST['g-recaptcha-response'])) {
-            $_SESSION['Message'] = "Verrification Unsuccesful";
-        } else {
-        }
-    }
-}
+require_once('../controllers/InputController.php');
+
 ?>
+
+
 
 <!doctype html>
 <html lang="en">
@@ -125,11 +66,11 @@ if (isset($_POST["login"])) {
                                     <form method="POST">
                                         <div class="d-flex align-items-center mb-3 pb-1">
                                             <i class="fas fa-cubes fa-2x"></i>
-                                            <span class="h1 fw-bold">Welcome Back!👋</span>
+                                            <span class="h1 fw-bold">Create Account 😊</span>
                                         </div>
 
-                                        <h5 class="fw-normal mb-2 pb-2" style="letter-spacing: 1px;">Sign into your
-                                            account</h5>
+                                        <!-- <h5 class="fw-normal mb-2 pb-2" style="letter-spacing: 1px;">Create your
+                                            account</h5> -->
                                         <?php if (isset($_SESSION["Error"])) { ?>
                                             ">
                                             <?= $_SESSION["Error"]; ?>
@@ -138,26 +79,48 @@ if (isset($_POST["login"])) {
 
                                         <div class="form-outline mb-1">
                                             <input type="text" class="form-control form-control-lg shadow-sm" name="username" />
-                                            <label class="form-label ">Username</label>
+                                            <label class="form-label">Username</label>
                                         </div>
+
+                                        <!-- <div class="form-outline mb-1">
+                                            <input type="email" class="form-control form-control-lg shadow-sm" name="password" />
+                                            <label class="form-label">Email</label>
+                                        </div> -->
 
                                         <div class="form-outline mb-1">
                                             <input type="password" class="form-control form-control-lg shadow-sm" name="password" />
                                             <label class="form-label">Password</label>
                                         </div>
+
+                                        <div class="form-outline mb-1">
+                                            <input type="password" class="form-control form-control-lg shadow-sm" name="password" />
+                                            <label class="form-label">Confirm Password</label>
+                                        </div>
+
+                                        <!-- <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="GenderButton">
+                                            <label class="form-check-label">
+                                                Male
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="GenderButton">
+                                            <label class="form-check-label">
+                                                Female
+                                            </label>
+                                        </div> -->
+                                        <!-- <br> -->
                                         <div class="g-recaptcha" data-sitekey="6LfkzGMjAAAAAIIgY1A0BNyDpDokKU2OiTBAJze-"></div>
                                         <br>
                                         <?php
                                         if (isset($_SESSION['Message'])) {
                                             echo $_SESSION['Message'];
-                                        }
-                                        unset($_SESSION['Message']);
-                                        ?>
-                                        <br><br>
+                                        } ?>
+                                        <br>
                                         <div class="pt-1 mb-4">
-                                            <button class="btn btn-dark btn-lg btn-block shadow-lg" name="login" input type="submit">Login</button>
+                                            <button class="btn btn-dark btn-lg btn-block" name="register" input type="submit">Register</button>
                                         </div>
-                                        <p class="mb-5 pb-lg-2" style="color: #393f81;">Don't have an account? <a href="./register.php" style="color: #393f81;">Register here</a></p>
+                                        <p class="mb-5 pb-lg-2" style="color: #393f81;">Have account? <a href="./login.php" style="color: #393f81;">Login here</a></p>
                                     </form>
                                 </div>
                             </div>
