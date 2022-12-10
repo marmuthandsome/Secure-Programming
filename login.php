@@ -3,22 +3,22 @@ session_start();
 $servername = "127.0.0.1";
 $username = "root";
 $password = "";
-$db = "AssessmentSecProg";
+$db = "assessmentSecProg";
 $connect = new PDO("mysql:host=$servername; dbname=$db", $username, $password);
+$connect->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 $connect->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 if (isset($_POST["login"])) {
+    $_POST["username"] = htmlspecialchars($_POST["username"]);
+    $_POST["password"] = htmlspecialchars($_POST["password"]);
     $time = time() - 30;
     $ip = '127.0.0.1';
-    $query = "SELECT count(*) as total_count FROM log WHERE ip = :ip AND time > :time";
+    $query = "SELECT count(*) FROM log WHERE ip = :ip AND time > :time";
     $limitquery = $connect->prepare($query);
-    $limitquery->execute(
-        array(
-            'ip'    =>     $ip,
-            'time'     =>    $time
-        )
-    );
-    $totalfailedloginattempts = $limitquery->rowCount();
-    if ($totalfailedloginattempts >= 3) {
+    $limitquery->bindValue(':ip', $ip);
+    $limitquery->bindValue(':time', $time);
+    $limitquery->execute();
+    $totalfailedloginattempts = $limitquery->fetchColumn();
+    if ($totalfailedloginattempts == 3) {
         $_SESSION['Message'] = "Too many failed login attempts";
     } else {
         if (isset($_POST['g-recaptcha-response'])) {
@@ -26,39 +26,33 @@ if (isset($_POST["login"])) {
             $response = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $secret . '&response=' . $_POST['g-recaptcha-response']);
             $data = json_decode($response);
             if ($data->success) {
-                $query = "SELECT * FROM users WHERE username = :username AND password = :password";
+                $query = "SELECT * FROM users WHERE username = :username";
                 $statement = $connect->prepare($query);
-                $statement->execute(
-                    array(
-                        'username'     =>     $_POST["username"],
-                        'password'     =>     $_POST["password"]
-                    )
-                );
-                $count = $statement->rowCount();
-                if ($count > 0) {
+                $statement->bindParam(':username', $_POST["username"]);
+                $statement->execute();
+                $output = $statement->fetch(PDO::FETCH_ASSOC);
+                if (password_verify($_POST["password"], $output['password'])) {
                     $_SESSION["username"] = $_POST["username"];
                     $sql = "DELETE FROM log WHERE ip=?";
                     $stmt = $connect->prepare($sql);
                     $stmt->execute(["127.0.0.1"]);
-                    header("Location: ./dashboard.html");
+                    header("Location: ./dashboard.php");
                     unset($_SESSION['Message']);
                 } else {
                     $ip_address = '127.0.0.1';
                     $logtime = time();
                     $query = "INSERT INTO log (ip, time) VALUES (:ip,:time)";
                     $stmt = $connect->prepare($query);
-                    $stmt->execute(
-                        array(
-                            'ip'        =>     $ip_address,
-                            'time'      =>     $logtime
-                        )
-                    );
-                    $_SESSION['Message'] = "Wrong Credentials";
+                    $stmt->bindParam(':ip', $ip_address);
+                    $stmt->bindParam(':time', $logtime);
+                    $stmt->execute();
+                    $totalfailedloginattempts++;
+                    $_SESSION['Message'] = "Invalid Username or Password";
                 }
             }
-        } elseif (empty($_POST['g-recaptcha-response'])) {
-            $_SESSION['Message'] = "Verrification Unsuccesful";
-        } else {
+        }
+        if (empty($_POST['g-recaptcha-response'])) {
+            $_SESSION['Message'] = "Please insert your Username or Password";
         }
     }
 }
@@ -81,7 +75,7 @@ if (isset($_POST["login"])) {
 
 <body>
     <!-- Navbar -->
-    <div class="container">
+    <!-- <div class="container">
         <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark p-3 shadow-lg">
             <div class="container-md">
                 <a class="navbar-brand" href="./index.html">
@@ -106,7 +100,7 @@ if (isset($_POST["login"])) {
                 </div>
             </div>
         </nav>
-    </div>
+    </div> -->
     <!-- Navbar -->
 
     <!-- Login -->
