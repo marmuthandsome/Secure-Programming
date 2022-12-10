@@ -25,6 +25,16 @@ if (isset($_POST['register'])) {
         $msg['username'] = "Username length should be between 3 and 10
         character long";
         $error = true;
+    } else {
+        $query = "SELECT count(*) FROM users WHERE username = :username";
+        $limit = $connect->prepare($query);
+        $limit->bindParam(':username', $user_name);
+        $limit->execute();
+        $same = $limit->fetchColumn();
+        if ($same > 0) {
+            $msg['username'] = "Username already exists";
+            $error = true;
+        }
     }
 
     //validate email
@@ -41,15 +51,15 @@ if (isset($_POST['register'])) {
     $upper_case = preg_match('@[A-Z]@', $user_pwd);
     $special_Char = preg_match('@[^\w]@', $user_pwd);
 
-    // if ($user_pwd === "") {
-    //     $msg['password'] = "Your Password Is Empty!";
-    //     $error = true;
-    // } else if (strlen($user_pwd) < 10 || !$number || !$upper_case || !$special_Char) {
-    //     $msg['password'] = "Password Must Be At Least 10 Characters And Contains Number,Uppercase, and Special Characters";
-    //     $error = true;
-    // } else {
-    //     $confirm_pwd = $user_pwd;
-    // }
+    if ($user_pwd === "") {
+        $msg['password'] = "Your Password Is Empty!";
+        $error = true;
+    } else if (strlen($user_pwd) < 10 || !$number || !$upper_case || !$special_Char) {
+        $msg['password'] = "Password Must Be At Least 10 Characters And Contains Number,Uppercase, and Special Characters";
+        $error = true;
+    } else {
+        $confirm_pwd = $user_pwd;
+    }
 
     //filter confirm password
     if ($user_Conpwd === "") {
@@ -74,6 +84,7 @@ if (isset($_POST['register'])) {
         $statement->bindParam(':gender', $_POST["gender"], PDO::PARAM_STR);
         $statement->bindParam(':address', $_POST["address"], PDO::PARAM_STR);
         $statement->execute();
+        $_SESSION['msg'] = "Account has been created succesfully";
     } else {
         $_SESSION['error'] = $msg;
     }
@@ -199,6 +210,11 @@ if (isset($_POST['register'])) {
                                                 echo "<br>";
                                             }
                                             unset($_SESSION['error']);
+                                        }
+                                        if (isset($_SESSION['msg'])) {
+                                            echo $_SESSION['msg'];
+                                            echo "<br>";
+                                            unset($_SESSION['msg']);
                                         }
                                         ?>
                                         <br>

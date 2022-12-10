@@ -14,8 +14,8 @@ if (isset($_POST["login"])) {
     $ip = '127.0.0.1';
     $query = "SELECT count(*) FROM log WHERE ip = :ip AND time > :time";
     $limitquery = $connect->prepare($query);
-    $limitquery->bindValue(':ip', $ip);
-    $limitquery->bindValue(':time', $time);
+    $limitquery->bindParam(':ip', $ip);
+    $limitquery->bindParam(':time', $time);
     $limitquery->execute();
     $totalfailedloginattempts = $limitquery->fetchColumn();
     if ($totalfailedloginattempts == 3) {
@@ -33,6 +33,9 @@ if (isset($_POST["login"])) {
                 $output = $statement->fetch(PDO::FETCH_ASSOC);
                 if (password_verify($_POST["password"], $output['password'])) {
                     $_SESSION["username"] = $_POST["username"];
+                    $_SESSION["gender"] = $output['gender'];
+                    $_SESSION["email"] = $output['email'];
+                    $_SESSION["address"] = $output['address'];
                     $sql = "DELETE FROM log WHERE ip=?";
                     $stmt = $connect->prepare($sql);
                     $stmt->execute(["127.0.0.1"]);
