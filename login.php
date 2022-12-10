@@ -33,9 +33,6 @@ if (isset($_POST["login"])) {
                 $output = $statement->fetch(PDO::FETCH_ASSOC);
                 if (password_verify($_POST["password"], $output['password'])) {
                     $_SESSION["username"] = $_POST["username"];
-                    $_SESSION["gender"] = $output['gender'];
-                    $_SESSION["email"] = $output['email'];
-                    $_SESSION["address"] = $output['address'];
                     $sql = "DELETE FROM log WHERE ip=?";
                     $stmt = $connect->prepare($sql);
                     $stmt->execute(["127.0.0.1"]);
